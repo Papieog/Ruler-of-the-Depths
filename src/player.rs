@@ -1,12 +1,19 @@
 //player.rs
-use bevy::prelude::*;
+use bevy::{
+    core_pipeline::{
+        bloom::BloomSettings,
+        tonemapping::Tonemapping,
+    },
+    prelude::*,
+};
+
 
 use crate::physics::*;
 use crate::helper_functions::*;
-use crate::animation_linker::*;
 use crate::enemy_ai::Targetable;
 use bevy::input::keyboard::KeyCode;
 use bevy::input::mouse::MouseMotion;
+use bevy::input::mouse::MouseWheel;
 
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
@@ -16,14 +23,9 @@ impl Plugin for PlayerPlugin {
         .add_systems(Update, camera_movement)
         .add_systems(Update, player_controller)
         .add_systems(Update, rotate_player)
-        .add_systems(Update, animation_func)
-        .add_systems(PostUpdate, animation_speed)
-        .add_systems(PostUpdate, link_animations)
         ;
     }
 }
-#[derive(Resource)]
-struct Animations(Vec<Handle<AnimationClip>>);
 #[derive(Component)]
 pub struct Player{
     pub size: f32,
@@ -38,9 +40,6 @@ pub fn spawn_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
 ){
-    commands.insert_resource(Animations(vec![
-        asset_server.load("Fish_2.glb#Animation0"),
-    ]));
 
     let player = (
     TransformBundle{
@@ -62,7 +61,7 @@ pub fn spawn_player(
     );
 
     let player_model = (SceneBundle {
-        scene: asset_server.load("Fish_2.glb#Scene0"),
+        scene: asset_server.load("nemo.glb#Scene0"),
         transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, 0.,3.14,0.)),
         ..default()
     },
@@ -73,7 +72,16 @@ pub fn spawn_player(
             ..default()
         }, CameraTransform);
     let camera = (Camera3dBundle{
+        camera: Camera{
+            hdr: true,
+            ..default()
+        },
+        tonemapping: Tonemapping::TonyMcMapface,
         transform: Transform::from_xyz(0.0, 2.0, -35.0).looking_at(Vec3::new(0., 0.5, 0.), Vec3::Y),
+        ..default()
+    },
+    BloomSettings{
+        intensity: 0.3,
         ..default()
     },
     FogSettings {
@@ -171,26 +179,4 @@ pub fn rotate_player(
     }
 }
 
-fn animation_func(
-    animations: Res<Animations>,
-    mut player_query: Query<&mut AnimationPlayer>,
-    //mut player_model: Query<(&AnimationEntityLink, &PlayerModel)>
-) {
-    for mut player in player_query.iter_mut(){
-        player.play(animations.0[0].clone_weak()).repeat();
-    }
-}
 
-fn animation_speed(
-    mut animation_players: Query<&mut AnimationPlayer>,
-    player_query: Query<&Physics, (With<Player>, Without<PlayerModel>)>,
-    mut player_model: Query<(&AnimationEntityLink, &PlayerModel)>,
-) {
-    if let Ok(physics) = player_query.get_single() {
-        for (link, _) in player_model.iter_mut() {
-            if let Ok(mut player) = animation_players.get_mut(link.0) {
-                player.set_speed(physics.velocity.length() / 5.);
-            }
-        }
-    }
-}

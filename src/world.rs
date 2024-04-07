@@ -1,16 +1,19 @@
 //world.rs
 use bevy::{
     pbr::NotShadowCaster,
-    prelude::*,
+    prelude::*, sprite::Mesh2dHandle,
 };
 use crate::player::*;
-
+use rand::Rng;
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
         app
         .add_systems(Startup, add_light)
         .add_systems(Update, change_fog)
+        .add_systems(Startup, spawn_particles)
+        .add_systems(PreStartup, setup_particle_assets)
+        .add_systems(Update, move_particles)
         ;
     }
 }
@@ -109,6 +112,62 @@ pub fn change_fog(
                     Color::rgb(0.3, 0.4, 0.6),
                 );
             }
+        }
+    }
+}
+
+#[derive(Resource)]
+pub struct ParticleAssets{
+    mesh: Handle<Mesh>,
+    material: Handle<StandardMaterial>,
+}
+fn setup_particle_assets(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    let mesh = meshes.add(Cuboid::default());
+    let material = materials.add(StandardMaterial{
+        emissive: Color::rgb_linear(23000.0, 9000.0, 3000.0),
+        ..default()
+    });
+
+    commands.insert_resource(ParticleAssets {
+        mesh,
+        material
+    });
+}
+#[derive(Component)]
+pub struct Particles;
+pub fn spawn_particles(
+    mut commands: Commands,
+    assets: Res<ParticleAssets>
+){
+    let mut rng = rand::thread_rng();
+    for _ in 0..1200{
+        let x = rng.gen_range(-500.0..500.0);
+        let y = rng.gen_range(-100.0..100.0);
+        let z = rng.gen_range(-500.0..500.0);
+        let particle = (PbrBundle{
+            mesh: assets.mesh.clone(),
+            material: assets.material.clone(),
+            transform: Transform::from_xyz(x, y, z).
+            with_scale(Vec3::splat(0.1)),
+            ..default()
+        },
+        Particles);
+        commands.spawn(particle);
+    }
+}
+
+pub fn move_particles(
+    mut particles: Query<&mut Transform, With<Particles>>,
+    time: Res<Time>
+){
+    for mut transform in particles.iter_mut(){
+        transform.translation.y -= 2. * time.delta_seconds();
+        if transform.translation.y < -99.9{
+            transform.translation.y = 100.0;
         }
     }
 }

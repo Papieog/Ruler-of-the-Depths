@@ -4,6 +4,8 @@ use crate::physics::*;
 use crate::helper_functions::*;
 use crate::animation_linker::*;
 use crate::enemy_ai::Targetable;
+use crate::player::Player;
+use rand::Rng;
 
 pub struct EnemiesPlugin;
 
@@ -21,6 +23,10 @@ impl Plugin for EnemiesPlugin {
 #[derive(Resource)]
 pub struct EnemyAssets {
     pub fish_model: Handle<Scene>,
+    pub purple_model: Handle<Scene>,
+    pub shark_model: Handle<Scene>,
+    pub whale_model: Handle<Scene>,
+    pub manta_model: Handle<Scene>,
 }
 fn setup_enemy_assets(
     mut commands: Commands,
@@ -28,7 +34,17 @@ fn setup_enemy_assets(
 ) {
     
     let fish_model = asset_server.load("Fish.glb#Scene0");
-    commands.insert_resource(EnemyAssets { fish_model });
+    let purple_model = asset_server.load("purple_fish.glb#Scene0");
+    let shark_model = asset_server.load("Shark.glb#Scene0");
+    let whale_model = asset_server.load("Whale.glb#Scene0");
+    let manta_model = asset_server.load("Manta ray.glb#Scene0");
+    commands.insert_resource(EnemyAssets {
+        fish_model,
+        purple_model,
+        shark_model,
+        whale_model,
+        manta_model
+    });
 }
 
 #[derive(Component)]
@@ -41,13 +57,22 @@ pub struct Enemy{
 pub struct EnemyModel;
 pub fn spawn_fish(
     mut commands: Commands,
-    enemy_model_assets: Res<EnemyAssets>,
+    model: Handle<Scene>,
     size: f32,
     position: Vec3,
     target: Entity,
-    amount: i32
+    amount: i32,
+    speed: f32,
 ){
+    let mut rng = rand::thread_rng();
     for i in 0..amount{
+        let mut position = position;
+        if position == Vec3::ZERO{
+            let x = rng.gen_range(-400.0..400.);
+            let y = rng.gen_range(-100.0..100.);
+            let z = rng.gen_range(-400.0..400.);
+            position = Vec3::new(x, y, z)
+        }
         let enemy = (
             TransformBundle{
                 local: Transform::from_translation(position+i as f32).
@@ -60,7 +85,7 @@ pub fn spawn_fish(
                 drag: 1.,
             },
             Enemy{
-                speed: 5.0,
+                speed: speed,
                 size: size,
                 target: target
             },
@@ -68,7 +93,7 @@ pub fn spawn_fish(
         );
 
         let enemy_model = (SceneBundle {
-            scene: enemy_model_assets.fish_model.clone(),
+            scene: model.clone(),
             transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, 0.,3.14,0.)),
             ..default()
         },
@@ -82,14 +107,31 @@ pub fn spawn_fish(
 
 pub fn move_enemy(
     time: Res<Time>,
-    mut enemies: Query<(&mut Transform, &mut Physics, &Enemy), Without<Targetable>>,
-    target_query: Query<&Transform, With<Targetable>>
+    mut enemies: Query<(&mut Transform, &mut Physics, &Enemy), (Without<Targetable>, Without<Player>)>,
+    target_query: Query<&Transform, With<Targetable>>,
+    player_query: Query<(&Transform, &Player), Without<Enemy>>
 ) {
-    for (transform, mut physics, stats) in enemies.iter_mut() {
+    for (enemy_transform, mut physics, stats) in enemies.iter_mut() {
         if let Ok(target_transform) = target_query.get(stats.target) {
-            let temp = Transform::from_translation(transform.translation).looking_at(target_transform.translation, Vec3::Y);
-            let enemy_movement = rotate_vector_by_quaternion(Vec3::new(0., 0., -stats.speed), temp.rotation);
-            physics.velocity += enemy_movement * time.delta_seconds();
+            if let Ok((player_transform, player)) = player_query.get_single() {
+                if player_transform.translation.distance(enemy_transform.translation) > 100.0{
+                    let temp = Transform::from_translation(enemy_transform.translation).looking_at(target_transform.translation, Vec3::Y);
+                    let enemy_movement = rotate_vector_by_quaternion(Vec3::new(0., 0., -stats.speed), temp.rotation);
+                    physics.velocity += enemy_movement * time.delta_seconds();
+                }
+                else{
+                    if player.size > stats.size{
+                        let temp = Transform::from_translation(enemy_transform.translation).looking_at(player_transform.translation, Vec3::Y);
+                        let enemy_movement = rotate_vector_by_quaternion(Vec3::new(0., 0., stats.speed), temp.rotation);
+                        physics.velocity += enemy_movement * time.delta_seconds() * 2.0;
+                    }
+                    else{
+                        let temp = Transform::from_translation(enemy_transform.translation).looking_at(player_transform.translation, Vec3::Y);
+                        let enemy_movement = rotate_vector_by_quaternion(Vec3::new(0., 0., -stats.speed), temp.rotation);
+                        physics.velocity += enemy_movement * time.delta_seconds();
+                    }
+                }
+            }
         }
         
     }
