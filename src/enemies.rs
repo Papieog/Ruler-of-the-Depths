@@ -24,9 +24,9 @@ impl Plugin for EnemiesPlugin {
 pub struct EnemyAssets {
     pub fish_model: Handle<Scene>,
     pub purple_model: Handle<Scene>,
-    pub shark_model: Handle<Scene>,
     pub whale_model: Handle<Scene>,
     pub manta_model: Handle<Scene>,
+    pub nemo_model: Handle<Scene>,
 }
 fn setup_enemy_assets(
     mut commands: Commands,
@@ -35,15 +35,15 @@ fn setup_enemy_assets(
     
     let fish_model = asset_server.load("Fish.glb#Scene0");
     let purple_model = asset_server.load("purple_fish.glb#Scene0");
-    let shark_model = asset_server.load("Shark.glb#Scene0");
     let whale_model = asset_server.load("Whale.glb#Scene0");
-    let manta_model = asset_server.load("Manta ray.glb#Scene0");
+    let manta_model = asset_server.load("Manta.glb#Scene0");
+    let nemo_model = asset_server.load("nemo.glb#Scene0");
     commands.insert_resource(EnemyAssets {
         fish_model,
         purple_model,
-        shark_model,
         whale_model,
-        manta_model
+        manta_model,
+        nemo_model
     });
 }
 
@@ -63,6 +63,7 @@ pub fn spawn_fish(
     target: Entity,
     amount: i32,
     speed: f32,
+    model_size: f32,
 ){
     let mut rng = rand::thread_rng();
     for i in 0..amount{
@@ -94,7 +95,8 @@ pub fn spawn_fish(
 
         let enemy_model = (SceneBundle {
             scene: model.clone(),
-            transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, 0.,3.14,0.)),
+            transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, 0.,3.14,0.))
+            .with_scale(Vec3::splat(model_size)),
             ..default()
         },
         EnemyModel);

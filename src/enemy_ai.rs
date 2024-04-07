@@ -11,23 +11,33 @@ pub struct EnemyAIPlugin;
 impl Plugin for EnemyAIPlugin {
     fn build(&self, app: &mut App) {
         app
-        .add_systems(PostStartup, spawn_fish_1)
-        .add_systems(Startup, spawn_target_1)
-        .add_systems(Update, (move_target_1, collision_1, add_component_1))
+        .add_systems(Startup, (spawn_fish_1, ))
+        .add_systems(PostStartup, add_component_1)
+        .add_systems(PreStartup, spawn_target_1)
+        .add_systems(Update, (move_target_1, collision_1))
 
-        .add_systems(PostStartup, spawn_fish_2)
-        .add_systems(Startup, spawn_target_2)
-        .add_systems(Update, (move_target_2, collision_2, add_component_2))
+        .add_systems(Startup, spawn_fish_2)
+        .add_systems(PostStartup, add_component_2)
+        .add_systems(PreStartup, spawn_target_2)
+        .add_systems(Update, (move_target_2, collision_2))
 
-        .add_systems(PostStartup, spawn_fish_3)
-        .add_systems(Update, (collision_3, add_component_3))
+        .add_systems(Startup, spawn_fish_3)
+        .add_systems(PostStartup, add_component_3)
+        .add_systems(Update, collision_3)
 
-        .add_systems(PostStartup, spawn_fish_4)
-        .add_systems(Update, (collision_4, add_component_4))
+        .add_systems(Startup, spawn_fish_4)
+        .add_systems(PostStartup, add_component_4)
+        .add_systems(Update, collision_4)
 
-        .add_systems(PostStartup, spawn_fish_5)
-        .add_systems(Startup, spawn_target_5)
-        .add_systems(Update, (move_target_5, collision_5, add_component_5))
+        .add_systems(Startup, spawn_fish_5)
+        .add_systems(PostStartup, add_component_5)
+        .add_systems(PreStartup, spawn_target_5)
+        .add_systems(Update, (move_target_5, collision_5))
+
+        .add_systems(Startup, spawn_fish_6)
+        .add_systems(PostStartup, add_component_6)
+        .add_systems(PreStartup, spawn_target_6)
+        .add_systems(Update, (move_target_6, collision_6))
         ;
     }
 }
@@ -42,7 +52,7 @@ pub fn spawn_fish_1(
     let position = Vec3::new(100., 0., 100.);
 
     if let Ok((target, _)) = target_query.get_single(){
-        spawn_fish(commands, enemy_model_assets.fish_model.clone(), size, position, target, 25, 5.0);
+        spawn_fish(commands, enemy_model_assets.purple_model.clone(), size, position, target, 40, 5.0, 0.6);
     }
 }
 
@@ -115,7 +125,7 @@ pub fn spawn_fish_2(
     let position = Vec3::new(-120., -50., -120.);
 
     if let Ok((target, _)) = target_query.get_single(){
-        spawn_fish(commands, enemy_model_assets.manta_model.clone(), size, position, target, 25, 7.0);
+        spawn_fish(commands, enemy_model_assets.manta_model.clone(), size, position, target, 25, 7.0, 1.6);
     }
 }
 
@@ -189,7 +199,7 @@ pub fn spawn_fish_3(
     let position = Vec3::ZERO;
 
     if let Ok((target, _)) = target_query.get_single(){
-        spawn_fish(commands, enemy_model_assets.shark_model.clone(), size, position, target, 10, 5.0);
+        spawn_fish(commands, enemy_model_assets.fish_model.clone(), size, position, target, 10, 5.0, 1.3);
     }
 }
 
@@ -204,7 +214,7 @@ pub fn add_component_3(
 ){
     if let Ok(entity) = target_entity.get_single(){
         for (fish, fish_entity) in fish_query.iter() {
-            if fish.target == entity {
+            if fish.target == entity && fish.speed == 5.0 {
                 commands.entity(fish_entity).insert(TargetThreeComp);
             }
         }
@@ -237,11 +247,11 @@ pub fn spawn_fish_4(
     enemy_model_assets: Res<EnemyAssets>,
     target_query: Query<(Entity, &Player)>,
 ){
-    let size = 0.4;
+    let size = 0.5;
     let position = Vec3::ZERO;
 
     if let Ok((target, _)) = target_query.get_single(){
-        spawn_fish(commands, enemy_model_assets.purple_model.clone(), size, position, target, 100, 15.0);
+        spawn_fish(commands, enemy_model_assets.nemo_model.clone(), size, position, target, 100, 15.0, 0.9);
     }
 }
 
@@ -256,7 +266,7 @@ pub fn add_component_4(
 ){
     if let Ok(entity) = target_entity.get_single(){
         for (fish, fish_entity) in fish_query.iter() {
-            if fish.target == entity {
+            if fish.target == entity && fish.speed == 15.0 {
                 commands.entity(fish_entity).insert(TargetFourComp);
             }
         }
@@ -292,7 +302,7 @@ pub fn spawn_fish_5(
     let position = Vec3::new(400., 0., 400.);
 
     if let Ok((target, _)) = target_query.get_single(){
-        spawn_fish(commands, enemy_model_assets.whale_model.clone(), size, position, target, 20, 8.0);
+        spawn_fish(commands, enemy_model_assets.whale_model.clone(), size, position, target, 20, 8.0, 1.0);
     }
 }
 
@@ -344,6 +354,85 @@ pub fn collision_5(
     let mut combinations = query.iter_combinations_mut();
     while let Some([(mut physics, transform), (mut other_physics, other_transform)]) = combinations.fetch_next() {
         if transform.translation.distance(other_transform.translation) < (physics.collider + other_physics.collider)*15.{
+            let distance = transform.translation.distance(other_transform.translation);
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+            other_physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+            
+        }
+        
+    }
+}
+/*#endregion*/
+
+/*#region fish_6*/
+pub fn spawn_fish_6(
+    commands: Commands,
+    enemy_model_assets: Res<EnemyAssets>,
+    target_query: Query<(Entity, &TargetSix)>,
+){
+    let size = 0.9;
+    let position = Vec3::new(-120.,-50.,120.);
+
+    if let Ok((target, _)) = target_query.get_single(){
+        spawn_fish(commands, enemy_model_assets.purple_model.clone(), size, position, target, 40, 5.0, 0.6);
+    }
+}
+
+#[derive(Component)]
+pub struct TargetSix;
+pub fn spawn_target_6(
+    mut commands: Commands,
+){
+    let target = (TransformBundle{
+        local: Transform::from_xyz(-120.,-50.,120.),
+        ..default()
+    },
+    TargetSix,
+    Targetable);
+    commands.spawn(target);
+}
+
+pub fn move_target_6(
+    mut target: Query<&mut Transform, With<TargetSix>>,
+    time: Res<Time>
+){
+    if let Ok(mut transform) = target.get_single_mut(){
+        transform.look_at(Vec3::new(120.,-50.,-120.), Vec3::Y);
+        let rotation = transform.rotation;
+        transform.translation += rotate_vector_by_quaternion(Vec3::NEG_Z, rotation)*time.delta_seconds()*8.;
+        if transform.translation.x > 120.{
+            transform.look_at(Vec3::new(120.,-50.,-120.), Vec3::Y);
+        }
+        if transform.translation.x < -120.{
+            transform.look_at(Vec3::new(-120.,-50.,120.), Vec3::Y);
+        }
+    }
+}
+
+#[derive(Component)]
+pub struct TargetSixComp;
+pub fn add_component_6(
+    mut commands: Commands,
+    fish_query: Query<(&Enemy, Entity)>,
+    target_entity: Query<Entity, With<TargetSix>>
+){
+    if let Ok(entity) = target_entity.get_single(){
+        for (fish, fish_entity) in fish_query.iter() {
+            if fish.target == entity {
+                commands.entity(fish_entity).insert(TargetSixComp);
+            }
+        }
+    }
+}
+
+pub fn collision_6(
+    mut query: Query<(&mut Physics, &mut Transform), With<TargetSixComp>>,
+    time: Res<Time>,
+){
+    let mut combinations = query.iter_combinations_mut();
+    while let Some([(mut physics, transform), (mut other_physics, other_transform)]) = combinations.fetch_next() {
+        if transform.translation.distance(other_transform.translation) < (physics.collider + other_physics.collider)*5.{
             let distance = transform.translation.distance(other_transform.translation);
             let direction = transform.translation - other_transform.translation;
             physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);

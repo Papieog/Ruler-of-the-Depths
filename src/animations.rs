@@ -2,25 +2,32 @@ use bevy::prelude::*;
 use crate::animation_linker::*;
 use crate::player::*;
 use crate::physics::*;
-use crate::enemies::*;
 use crate::enemy_ai::*;
 
 #[derive(Resource)]
-struct Animations(Vec<Handle<AnimationClip>>);
+struct Animations{
+    nemo: Handle<AnimationClip>,
+    fish: Handle<AnimationClip>,
+    manta: Handle<AnimationClip>,
+    shark: Handle<AnimationClip>,
+    purple: Handle<AnimationClip>,
+    whale: Handle<AnimationClip>,
+}
 #[derive(Component)]
 
 pub struct ModelAnimationPlugin;
 impl Plugin for ModelAnimationPlugin {
     fn build(&self, app: &mut App) {
         let asset_server = app.world.get_resource::<AssetServer>().unwrap();
-        app.insert_resource(Animations(vec![
-            asset_server.load("nemo.glb#Animation0"),
-            asset_server.load("Fish.glb#Animation0"),
-            asset_server.load("Manta ray.glb#Animation0"),
-            asset_server.load("Shark.glb#Animation0"),
-            asset_server.load("purple_fish.glb#Animation0"),
-            asset_server.load("Whale.glb#Animation0"),
-        ]))
+        app
+        .insert_resource(Animations{
+            nemo: asset_server.load("nemo.glb#Animation0"),
+            fish: asset_server.load("Fish.glb#Animation0"),
+            manta: asset_server.load("Manta.glb#Animation0"),
+            shark: asset_server.load("Shark.glb#Animation0"),
+            purple: asset_server.load("purple_fish.glb#Animation0"),
+            whale: asset_server.load("Whale.glb#Animation0"),
+        })
         .add_systems(Update, animation_func_player)
         .add_systems(Update, (animation_func_1, animation_func_2, animation_func_3, animation_func_4, animation_func_5))
         .add_systems(PostUpdate, animation_speed)
@@ -36,7 +43,7 @@ fn animation_func_player(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[0].clone_weak()).repeat();
+            player.play(animations.shark.clone_weak()).repeat();
         }
     }
 }
@@ -48,7 +55,7 @@ fn animation_func_1(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[1].clone_weak()).repeat();
+            player.play(animations.purple.clone_weak()).repeat();
         }
     }
 }
@@ -59,7 +66,7 @@ fn animation_func_2(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[2].clone_weak()).repeat();
+            player.play(animations.manta.clone_weak()).repeat();
         }
     }
 }
@@ -70,7 +77,7 @@ fn animation_func_3(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[0].clone_weak()).repeat();
+            player.play(animations.fish.clone_weak()).repeat();
         }
     }
 }
@@ -81,7 +88,7 @@ fn animation_func_4(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[0].clone_weak()).repeat();
+            player.play(animations.nemo.clone_weak()).repeat();
         }
     }
 }
@@ -92,20 +99,20 @@ fn animation_func_5(
 ) {
     for (link, _) in player_model.iter_mut() {
         if let Ok(mut player) = animation_players.get_mut(link.0) {
-            player.play(animations.0[5].clone_weak()).repeat();
+            player.play(animations.whale.clone_weak()).repeat();
         }
     }
 }
 
 fn animation_speed(
     mut animation_players: Query<&mut AnimationPlayer>,
-    player_query: Query<&Physics, (With<Player>, Without<PlayerModel>)>,
+    player_query: Query<(&Physics, &Player), Without<PlayerModel>>,
     mut player_model: Query<(&AnimationEntityPlayerLink, &PlayerModel)>,
 ) {
-    if let Ok(physics) = player_query.get_single() {
+    if let Ok((physics, player_stats)) = player_query.get_single() {
         for (link, _) in player_model.iter_mut() {
             if let Ok(mut player) = animation_players.get_mut(link.0) {
-                player.set_speed(physics.velocity.length() / 5.);
+                player.set_speed(physics.velocity.length() / 10. / player_stats.size);
             }
         }
     }

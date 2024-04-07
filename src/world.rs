@@ -59,7 +59,7 @@ pub fn add_light(
                 cull_mode: None,
                 ..default()
             }),
-            transform: Transform::from_xyz(0., 199.9, 0.).with_scale(Vec3::new(10000., 200., 10000.)),
+            transform: Transform::from_xyz(0., 199.9, 0.).with_scale(Vec3::new(10000., 1000., 10000.)),
             ..default()
         },
         NotShadowCaster,
@@ -86,11 +86,11 @@ pub fn add_light(
 
 pub fn change_fog(
     mut fog: Query<(&mut FogSettings, &Transform), Without<Player>>,
-    player: Query<&Transform, (With<Player>, Without<FogSettings>)>
+    player: Query<(&Transform, &Player), Without<FogSettings>>
 ){
-    if let Ok(player_transform) = player.get_single(){
+    if let Ok((player_transform, player)) = player.get_single(){
         for (mut settings, camera_transform) in fog.iter_mut(){
-            let total_translation = player_transform.translation + camera_transform.translation;
+            let total_translation = player_transform.translation + camera_transform.translation*player.size;
             
             if total_translation.y > 100.0 {
                 settings.color = Color::rgba(0.6, 0.9, 1.0, 1.0); // Light blue
