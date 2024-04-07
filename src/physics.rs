@@ -7,7 +7,6 @@ impl Plugin for PhysicsPlugin {
     fn build(&self, app: &mut App) {
         app
         .add_systems(Update, movement)
-        .add_systems(Update, collision)
         .add_systems(Update, ground_collision)
         .add_systems(Update, drag)
         ;
@@ -31,22 +30,6 @@ pub fn movement(
     }
 }
 
-pub fn collision(
-    mut query: Query<(&mut Physics, &mut Transform, &Enemy)>,
-    time: Res<Time>,
-){
-    let mut combinations = query.iter_combinations_mut();
-    while let Some([(mut physics, transform, enemy), (mut other_physics, other_transform, other_enemy)]) = combinations.fetch_next() {
-        if transform.translation.distance(other_transform.translation) < (physics.collider + other_physics.collider)*5.{
-            let distance = transform.translation.distance(other_transform.translation);
-            let direction = transform.translation - other_transform.translation;
-            physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
-            other_physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
-            
-        }
-        
-    }
-}
 
 pub fn ground_collision(
     ground: Query<&Transform, With<Ground>>,

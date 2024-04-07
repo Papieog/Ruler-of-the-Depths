@@ -1,5 +1,8 @@
 //main.rs
 use bevy::{prelude::*, window::CursorGrabMode};
+use bevy_embedded_assets::EmbeddedAssetPlugin;
+use bevy_embedded_assets::PluginMode;
+use bevy::window::WindowResolution;
 mod helper_functions;
 mod animation_linker;
 mod enemy_ai;
@@ -18,7 +21,17 @@ use crate::physics::*;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(EmbeddedAssetPlugin { mode: PluginMode::ReplaceDefault })
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Bevy Game".to_string(),
+                resolution: WindowResolution::new(1920., 1080.).
+                with_scale_factor_override(1.),
+                resizable: true,
+                ..Default::default()
+            }),
+            ..Default::default()
+        }))
         .add_plugins(PlayerPlugin)
         .add_plugins(EnemiesPlugin)
         .add_plugins(WorldPlugin)

@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bevy = "0.13.2"
 rand = "0.8.5"
+bevy_embedded_assets = "0.10.2"
 
 [profile.dev]
 opt-level = 1

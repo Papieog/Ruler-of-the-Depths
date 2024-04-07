@@ -129,11 +129,11 @@ pub fn camera_movement(
                 let rotation_up_down = Quat::from_axis_angle(Vec3::X, ev.delta.y.min(0.)*time.delta_seconds()*-0.1).inverse();
                 camera_transform.rotate_around(Vec3::new(0.,0.,0.), rotation_up_down);
             }
-            else if camera_transform.translation.y + player_transform.translation.y < -98. {
+            else if camera_transform.translation.y + player_transform.translation.y < -97. {
                 let rotation_up_down = Quat::from_axis_angle(Vec3::X, ev.delta.y.max(1.)*time.delta_seconds()*-0.1).inverse();
                 camera_transform.rotate_around(Vec3::new(0.,0.,0.), rotation_up_down);
             }
-            else if camera_transform.translation.y + player_transform.translation.y > 98. && player_transform.translation.y<100.{
+            else if camera_transform.translation.y + player_transform.translation.y > 97. && player_transform.translation.y<100.{
                 let rotation_up_down = Quat::from_axis_angle(Vec3::X, ev.delta.y.min(-1.)*time.delta_seconds()*-0.1).inverse();
                 camera_transform.rotate_around(Vec3::new(0.,0.,0.), rotation_up_down);
             }
