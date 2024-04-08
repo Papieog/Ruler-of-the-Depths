@@ -1,22 +1,22 @@
 //world.rs
-use bevy::{
-    pbr::NotShadowCaster,
-    prelude::*, sprite::Mesh2dHandle,
-};
+
+/* #region init */
 use crate::player::*;
+use bevy::{pbr::NotShadowCaster, prelude::*};
 use rand::Rng;
 pub struct WorldPlugin;
 impl Plugin for WorldPlugin {
     fn build(&self, app: &mut App) {
-        app
-        .add_systems(Startup, add_light)
-        .add_systems(Update, change_fog)
-        .add_systems(Startup, spawn_particles)
-        .add_systems(PreStartup, setup_particle_assets)
-        .add_systems(Update, move_particles)
-        ;
+        app.add_systems(Startup, add_light)
+            .add_systems(Update, change_fog)
+            .add_systems(Startup, spawn_particles)
+            .add_systems(PreStartup, setup_particle_assets)
+            .add_systems(Update, move_particles);
     }
 }
+/* #endregion */
+
+/* #region spawn world */
 #[derive(Component)]
 pub struct Ground;
 pub fn add_light(
@@ -24,14 +24,13 @@ pub fn add_light(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-){
-
-
-    let light = DirectionalLightBundle{
-        directional_light: DirectionalLight{
+) {
+    let light = DirectionalLightBundle {
+        directional_light: DirectionalLight {
             illuminance: 5000.0,
             shadows_enabled: false,
-            ..default()},
+            ..default()
+        },
         transform: Transform::from_xyz(5.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..default()
     };
@@ -59,7 +58,8 @@ pub fn add_light(
                 cull_mode: None,
                 ..default()
             }),
-            transform: Transform::from_xyz(0., 199.9, 0.).with_scale(Vec3::new(10000., 1000., 10000.)),
+            transform: Transform::from_xyz(0., 199.9, 0.)
+                .with_scale(Vec3::new(10000., 1000., 10000.)),
             ..default()
         },
         NotShadowCaster,
@@ -73,36 +73,39 @@ pub fn add_light(
         ..default()
     });
 
-    let ground = (PbrBundle {
-        mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
-        transform: Transform::from_xyz(0.,-99.,0.,),
-        material: material_handle,
-        ..default()
-    },
-    Ground);
+    let ground = (
+        PbrBundle {
+            mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
+            transform: Transform::from_xyz(0., -99., 0.),
+            material: material_handle,
+            ..default()
+        },
+        Ground,
+    );
     commands.spawn(ground);
-
 }
+/* #endregion */
 
+/* #region world func */
 pub fn change_fog(
     mut fog: Query<(&mut FogSettings, &Transform), Without<Player>>,
-    player: Query<(&Transform, &Player), Without<FogSettings>>
-){
-    if let Ok((player_transform, player)) = player.get_single(){
-        for (mut settings, camera_transform) in fog.iter_mut(){
-            let total_translation = player_transform.translation + camera_transform.translation*player.size;
-            
+    player: Query<(&Transform, &Player), Without<FogSettings>>,
+) {
+    if let Ok((player_transform, player)) = player.get_single() {
+        for (mut settings, camera_transform) in fog.iter_mut() {
+            let total_translation =
+                player_transform.translation + camera_transform.translation * player.size;
+
             if total_translation.y > 100.0 {
                 settings.color = Color::rgba(0.6, 0.9, 1.0, 1.0); // Light blue
                 settings.directional_light_color = Color::rgba(0.9, 0.95, 1.0, 1.0); // Light white
                 settings.directional_light_exponent = 100.0;
                 settings.falloff = FogFalloff::from_visibility_colors(
                     10000.0,
-                    Color::rgba(0.6, 0.9, 1.0, 1.0), // Light blue
+                    Color::rgba(0.6, 0.9, 1.0, 1.0),  // Light blue
                     Color::rgba(0.9, 0.95, 1.0, 1.0), // Light white
                 );
-            }
-            else{
+            } else {
                 settings.color = Color::rgba(0.0, 0.3, 0.7, 1.0);
                 settings.directional_light_color = Color::rgba(0.0, 0.5, 0.8, 1.0);
                 settings.directional_light_exponent = 100.0;
@@ -115,9 +118,11 @@ pub fn change_fog(
         }
     }
 }
+/* #endregion */
 
+/* #region Particles */
 #[derive(Resource)]
-pub struct ParticleAssets{
+pub struct ParticleAssets {
     mesh: Handle<Mesh>,
     material: Handle<StandardMaterial>,
 }
@@ -127,47 +132,41 @@ fn setup_particle_assets(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     let mesh = meshes.add(Cuboid::default());
-    let material = materials.add(StandardMaterial{
+    let material = materials.add(StandardMaterial {
         emissive: Color::rgb_linear(23000.0, 9000.0, 3000.0),
         ..default()
     });
 
-    commands.insert_resource(ParticleAssets {
-        mesh,
-        material
-    });
+    commands.insert_resource(ParticleAssets { mesh, material });
 }
 #[derive(Component)]
 pub struct Particles;
-pub fn spawn_particles(
-    mut commands: Commands,
-    assets: Res<ParticleAssets>
-){
+pub fn spawn_particles(mut commands: Commands, assets: Res<ParticleAssets>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..1200{
+    for _ in 0..1200 {
         let x = rng.gen_range(-500.0..500.0);
         let y = rng.gen_range(-100.0..100.0);
         let z = rng.gen_range(-500.0..500.0);
-        let particle = (PbrBundle{
-            mesh: assets.mesh.clone(),
-            material: assets.material.clone(),
-            transform: Transform::from_xyz(x, y, z).
-            with_scale(Vec3::splat(0.1)),
-            ..default()
-        },
-        Particles);
+        let particle = (
+            PbrBundle {
+                mesh: assets.mesh.clone(),
+                material: assets.material.clone(),
+                transform: Transform::from_xyz(x, y, z).with_scale(Vec3::splat(0.1)),
+                ..default()
+            },
+            Particles,
+        );
         commands.spawn(particle);
     }
 }
 
-pub fn move_particles(
-    mut particles: Query<&mut Transform, With<Particles>>,
-    time: Res<Time>
-){
-    for mut transform in particles.iter_mut(){
+pub fn move_particles(mut particles: Query<&mut Transform, With<Particles>>, time: Res<Time>) {
+    for mut transform in particles.iter_mut() {
         transform.translation.y -= 2. * time.delta_seconds();
-        if transform.translation.y < -99.9{
+        if transform.translation.y < -99.9 {
             transform.translation.y = 100.0;
         }
     }
 }
+
+/* #endregion */

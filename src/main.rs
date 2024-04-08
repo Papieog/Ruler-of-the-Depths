@@ -1,12 +1,14 @@
 //main.rs
+
+/* #region imports */
+use bevy::window::WindowResolution;
 use bevy::{prelude::*, window::CursorGrabMode};
 use bevy_embedded_assets::EmbeddedAssetPlugin;
 use bevy_embedded_assets::PluginMode;
-use bevy::window::WindowResolution;
-mod helper_functions;
 mod animation_linker;
-mod enemy_ai;
 mod animations;
+mod enemy_ai;
+mod helper_functions;
 use crate::animations::*;
 use crate::enemy_ai::*;
 mod player;
@@ -17,16 +19,18 @@ mod world;
 use crate::world::*;
 mod physics;
 use crate::physics::*;
+/* #endregion */
 
-
+/*#region main*/
 fn main() {
     App::new()
-        .add_plugins(EmbeddedAssetPlugin { mode: PluginMode::ReplaceDefault })
+        .add_plugins(EmbeddedAssetPlugin {
+            mode: PluginMode::ReplaceDefault,
+        })
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Bevy Game".to_string(),
-                resolution: WindowResolution::new(1920., 1080.).
-                with_scale_factor_override(1.),
+                resolution: WindowResolution::new(1920., 1080.).with_scale_factor_override(1.),
                 resizable: true,
                 ..Default::default()
             }),
@@ -38,11 +42,12 @@ fn main() {
         .add_plugins(PhysicsPlugin)
         .add_plugins(EnemyAIPlugin)
         .add_plugins(ModelAnimationPlugin)
-
         .add_systems(Update, grab_mouse)
         .run();
 }
+/*#endregion*/
 
+/* #region func */
 fn grab_mouse(
     mut windows: Query<&mut Window>,
     mouse: Res<ButtonInput<MouseButton>>,
@@ -60,3 +65,4 @@ fn grab_mouse(
         window.cursor.grab_mode = CursorGrabMode::None;
     }
 }
+/* #endregion */

@@ -1,11 +1,14 @@
-use bevy::prelude::*;
+//animations.rs
+
+/* #region Setup */
 use crate::animation_linker::*;
-use crate::player::*;
-use crate::physics::*;
 use crate::enemy_ai::*;
+use crate::physics::*;
+use crate::player::*;
+use bevy::prelude::*;
 
 #[derive(Resource)]
-struct Animations{
+struct Animations {
     nemo: Handle<AnimationClip>,
     fish: Handle<AnimationClip>,
     manta: Handle<AnimationClip>,
@@ -19,8 +22,7 @@ pub struct ModelAnimationPlugin;
 impl Plugin for ModelAnimationPlugin {
     fn build(&self, app: &mut App) {
         let asset_server = app.world.get_resource::<AssetServer>().unwrap();
-        app
-        .insert_resource(Animations{
+        app.insert_resource(Animations {
             nemo: asset_server.load("nemo.glb#Animation0"),
             fish: asset_server.load("Fish.glb#Animation0"),
             manta: asset_server.load("Manta.glb#Animation0"),
@@ -29,13 +31,24 @@ impl Plugin for ModelAnimationPlugin {
             whale: asset_server.load("Whale.glb#Animation0"),
         })
         .add_systems(Update, animation_func_player)
-        .add_systems(Update, (animation_func_1, animation_func_2, animation_func_3, animation_func_4, animation_func_5))
+        .add_systems(
+            Update,
+            (
+                animation_func_1,
+                animation_func_2,
+                animation_func_3,
+                animation_func_4,
+                animation_func_5,
+            ),
+        )
         .add_systems(PostUpdate, animation_speed)
         .add_systems(Last, link_animations)
         .add_systems(Last, link_animations_parent);
     }
 }
+/* #endregion */
 
+/* #region animation init */
 fn animation_func_player(
     animations: Res<Animations>,
     mut animation_players: Query<&mut AnimationPlayer>,
@@ -103,7 +116,9 @@ fn animation_func_5(
         }
     }
 }
+/* #endregion */
 
+/* #region animation funcs */
 fn animation_speed(
     mut animation_players: Query<&mut AnimationPlayer>,
     player_query: Query<(&Physics, &Player), Without<PlayerModel>>,
@@ -117,3 +132,4 @@ fn animation_speed(
         }
     }
 }
+/* #endregion */
