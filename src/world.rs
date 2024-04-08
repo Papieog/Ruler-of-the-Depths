@@ -21,7 +21,6 @@ impl Plugin for WorldPlugin {
 pub struct Ground;
 pub fn add_light(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
@@ -44,7 +43,7 @@ pub fn add_light(
                 cull_mode: None,
                 ..default()
             }),
-            transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::new(10000., 200., 10000.)),
+            transform: Transform::from_xyz(0., 0., 0.).with_scale(Vec3::new(100000., 200., 100000.)),
             ..default()
         },
         NotShadowCaster,
@@ -59,25 +58,23 @@ pub fn add_light(
                 ..default()
             }),
             transform: Transform::from_xyz(0., 199.9, 0.)
-                .with_scale(Vec3::new(10000., 1000., 10000.)),
+                .with_scale(Vec3::new(100000., 10000., 100000.)),
             ..default()
         },
         NotShadowCaster,
     ));
 
-    let texture_handle = asset_server.load("sand.png");
-    let material_handle = materials.add(StandardMaterial {
-        base_color_texture: Some(texture_handle.clone()),
-        alpha_mode: AlphaMode::Blend,
-        unlit: true,
-        ..default()
-    });
 
     let ground = (
         PbrBundle {
             mesh: meshes.add(Plane3d::default().mesh().size(10000.0, 10000.0)),
             transform: Transform::from_xyz(0., -99., 0.),
-            material: material_handle,
+            material: materials.add(StandardMaterial {
+                base_color: Color::rgb(0.96, 0.87, 0.7),
+                unlit: true,
+                cull_mode: None,
+                ..default()
+            }),
             ..default()
         },
         Ground,
@@ -89,31 +86,34 @@ pub fn add_light(
 /* #region world func */
 pub fn change_fog(
     mut fog: Query<(&mut FogSettings, &Transform), Without<Player>>,
+    camera_transform_transform_query: Query<&Transform, (With<CameraTransform>, Without<Camera3d>, Without<Player>)>,
     player: Query<(&Transform, &Player), Without<FogSettings>>,
 ) {
     if let Ok((player_transform, player)) = player.get_single() {
-        for (mut settings, camera_transform) in fog.iter_mut() {
-            let total_translation =
-                player_transform.translation + camera_transform.translation * player.size;
+        if let Ok(camera_transform_transform) = camera_transform_transform_query.get_single() {
+            for (mut settings, camera_transform) in fog.iter_mut() {
+                let total_translation =
+                    player_transform.translation + camera_transform.translation * player.size * camera_transform_transform.scale.x;
 
-            if total_translation.y > 100.0 {
-                settings.color = Color::rgba(0.6, 0.9, 1.0, 1.0); // Light blue
-                settings.directional_light_color = Color::rgba(0.9, 0.95, 1.0, 1.0); // Light white
-                settings.directional_light_exponent = 100.0;
-                settings.falloff = FogFalloff::from_visibility_colors(
-                    10000.0,
-                    Color::rgba(0.6, 0.9, 1.0, 1.0),  // Light blue
-                    Color::rgba(0.9, 0.95, 1.0, 1.0), // Light white
-                );
-            } else {
-                settings.color = Color::rgba(0.0, 0.3, 0.7, 1.0);
-                settings.directional_light_color = Color::rgba(0.0, 0.5, 0.8, 1.0);
-                settings.directional_light_exponent = 100.0;
-                settings.falloff = FogFalloff::from_visibility_colors(
-                    100.0,
-                    Color::rgb(0.0, 0.2, 0.8),
-                    Color::rgb(0.3, 0.4, 0.6),
-                );
+                if total_translation.y > 100.0 {
+                    settings.color = Color::rgba(0.6, 0.9, 1.0, 1.0); // Light blue
+                    settings.directional_light_color = Color::rgba(0.9, 0.95, 1.0, 1.0); // Light white
+                    settings.directional_light_exponent = 100.0;
+                    settings.falloff = FogFalloff::from_visibility_colors(
+                        10000.0,
+                        Color::rgba(0.6, 0.9, 1.0, 1.0),  // Light blue
+                        Color::rgba(0.9, 0.95, 1.0, 1.0), // Light white
+                    );
+                } else {
+                    settings.color = Color::rgba(0.0, 0.3, 0.7, 1.0);
+                    settings.directional_light_color = Color::rgba(0.0, 0.5, 0.8, 1.0);
+                    settings.directional_light_exponent = 100.0;
+                    settings.falloff = FogFalloff::from_visibility_colors(
+                        100.0,
+                        Color::rgb(0.0, 0.2, 0.8),
+                        Color::rgb(0.3, 0.4, 0.6),
+                    );
+                }
             }
         }
     }
@@ -143,10 +143,10 @@ fn setup_particle_assets(
 pub struct Particles;
 pub fn spawn_particles(mut commands: Commands, assets: Res<ParticleAssets>) {
     let mut rng = rand::thread_rng();
-    for _ in 0..1200 {
-        let x = rng.gen_range(-500.0..500.0);
+    for _ in 0..5000 {
+        let x = rng.gen_range(-800.0..800.0);
         let y = rng.gen_range(-100.0..100.0);
-        let z = rng.gen_range(-500.0..500.0);
+        let z = rng.gen_range(-800.0..800.0);
         let particle = (
             PbrBundle {
                 mesh: assets.mesh.clone(),

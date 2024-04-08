@@ -29,6 +29,7 @@ pub struct EnemyAssets {
     pub whale_model: Handle<Scene>,
     pub manta_model: Handle<Scene>,
     pub nemo_model: Handle<Scene>,
+    pub shark_model: Handle<Scene>,
 }
 fn setup_enemy_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     let fish_model = asset_server.load("Fish.glb#Scene0");
@@ -36,12 +37,14 @@ fn setup_enemy_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
     let whale_model = asset_server.load("Whale.glb#Scene0");
     let manta_model = asset_server.load("Manta.glb#Scene0");
     let nemo_model = asset_server.load("nemo.glb#Scene0");
+    let shark_model = asset_server.load("Shark.glb#Scene0");
     commands.insert_resource(EnemyAssets {
         fish_model,
         purple_model,
         whale_model,
         manta_model,
         nemo_model,
+        shark_model,
     });
 }
 /* #endregion */

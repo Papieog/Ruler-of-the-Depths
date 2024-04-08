@@ -16,24 +16,34 @@ impl Plugin for EnemyAIPlugin {
             .add_systems(PostStartup, add_component_1)
             .add_systems(PreStartup, spawn_target_1)
             .add_systems(Update, (move_target_1, collision_1))
+
             .add_systems(Startup, spawn_fish_2)
             .add_systems(PostStartup, add_component_2)
             .add_systems(PreStartup, spawn_target_2)
             .add_systems(Update, (move_target_2, collision_2))
+
             .add_systems(Startup, spawn_fish_3)
             .add_systems(PostStartup, add_component_3)
             .add_systems(Update, collision_3)
+
             .add_systems(Startup, spawn_fish_4)
             .add_systems(PostStartup, add_component_4)
             .add_systems(Update, collision_4)
+
             .add_systems(Startup, spawn_fish_5)
             .add_systems(PostStartup, add_component_5)
             .add_systems(PreStartup, spawn_target_5)
             .add_systems(Update, (move_target_5, collision_5))
+
             .add_systems(Startup, spawn_fish_6)
             .add_systems(PostStartup, add_component_6)
             .add_systems(PreStartup, spawn_target_6)
-            .add_systems(Update, (move_target_6, collision_6));
+            .add_systems(Update, (move_target_6, collision_6))
+
+            .add_systems(Startup, (spawn_fish_7,))
+            .add_systems(PostStartup, add_component_7)
+            .add_systems(PreStartup, spawn_target_7)
+            .add_systems(Update, move_target_7);
     }
 }
 /* #endregion */
@@ -109,7 +119,7 @@ pub fn collision_1(
         combinations.fetch_next()
     {
         if transform.translation.distance(other_transform.translation)
-            < (physics.collider + other_physics.collider) * 5.
+            < (physics.collider + other_physics.collider) * 10.
         {
             let distance = transform.translation.distance(other_transform.translation);
             let direction = transform.translation - other_transform.translation;
@@ -117,6 +127,11 @@ pub fn collision_1(
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+        }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
         }
     }
 }
@@ -193,7 +208,7 @@ pub fn collision_2(
         combinations.fetch_next()
     {
         if transform.translation.distance(other_transform.translation)
-            < (physics.collider + other_physics.collider) * 5.
+            < (physics.collider + other_physics.collider) * 15.
         {
             let distance = transform.translation.distance(other_transform.translation);
             let direction = transform.translation - other_transform.translation;
@@ -201,6 +216,11 @@ pub fn collision_2(
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+        }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
         }
     }
 }
@@ -265,6 +285,11 @@ pub fn collision_3(
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+        }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
         }
     }
 }
@@ -331,6 +356,11 @@ pub fn collision_4(
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
         }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+        }
     }
 }
 
@@ -353,7 +383,7 @@ pub fn spawn_fish_5(
             position,
             target,
             20,
-            8.0,
+            8.1,
             1.0,
         );
     }
@@ -407,7 +437,7 @@ pub fn collision_5(
         combinations.fetch_next()
     {
         if transform.translation.distance(other_transform.translation)
-            < (physics.collider + other_physics.collider) * 15.
+            < (physics.collider + other_physics.collider) * 25.
         {
             let distance = transform.translation.distance(other_transform.translation);
             let direction = transform.translation - other_transform.translation;
@@ -415,6 +445,11 @@ pub fn collision_5(
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+        }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
         }
     }
 }
@@ -459,14 +494,13 @@ pub fn spawn_target_6(mut commands: Commands) {
 
 pub fn move_target_6(mut target: Query<&mut Transform, With<TargetSix>>, time: Res<Time>) {
     if let Ok(mut transform) = target.get_single_mut() {
-        transform.look_at(Vec3::new(120., -50., -120.), Vec3::Y);
         let rotation = transform.rotation;
         transform.translation +=
             rotate_vector_by_quaternion(Vec3::NEG_Z, rotation) * time.delta_seconds() * 8.;
-        if transform.translation.x > 120. {
+        if transform.translation.z > 120. || transform.translation.x < -120.{
             transform.look_at(Vec3::new(120., -50., -120.), Vec3::Y);
         }
-        if transform.translation.x < -120. {
+        if transform.translation.z < -120. || transform.translation.x > 120. {
             transform.look_at(Vec3::new(-120., -50., 120.), Vec3::Y);
         }
     }
@@ -497,7 +531,7 @@ pub fn collision_6(
         combinations.fetch_next()
     {
         if transform.translation.distance(other_transform.translation)
-            < (physics.collider + other_physics.collider) * 5.
+            < (physics.collider + other_physics.collider) * 10.
         {
             let distance = transform.translation.distance(other_transform.translation);
             let direction = transform.translation - other_transform.translation;
@@ -505,6 +539,74 @@ pub fn collision_6(
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
             other_physics.velocity -=
                 direction.normalize_or_zero() * time.delta_seconds() * 30. / distance.max(0.1);
+        }
+        else{
+            let direction = transform.translation - other_transform.translation;
+            physics.velocity -= direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+            other_physics.velocity += direction.normalize_or_zero() * time.delta_seconds() * 0.1;
+        }
+    }
+}
+/*#endregion*/
+
+/*#region fish_7*/
+pub fn spawn_fish_7(
+    commands: Commands,
+    enemy_model_assets: Res<EnemyAssets>,
+    target_query: Query<(Entity, &TargetSeven)>,
+) {
+    let size = 10.0;
+    let position = Vec3::new(-600., 0., -600.);
+
+    if let Ok((target, _)) = target_query.get_single() {
+        spawn_fish(
+            commands,
+            enemy_model_assets.shark_model.clone(),
+            size,
+            position,
+            target,
+            1,
+            12.0,
+            0.8,
+        );
+    }
+}
+
+#[derive(Component)]
+pub struct TargetSeven;
+pub fn spawn_target_7(mut commands: Commands) {
+    let target = (
+        TransformBundle {
+            local: Transform::from_xyz(-600., 0., -600.),
+            ..default()
+        },
+        TargetSeven,
+        Targetable,
+    );
+    commands.spawn(target);
+}
+
+pub fn move_target_7(mut target: Query<&mut Transform, With<TargetSeven>>, time: Res<Time>) {
+    if let Ok(mut transform) = target.get_single_mut() {
+        transform.look_at(Vec3::ZERO, Vec3::Y);
+        let rotation = transform.rotation;
+        transform.translation +=
+            rotate_vector_by_quaternion(Vec3::X, rotation) * time.delta_seconds() * 10.;
+    }
+}
+
+#[derive(Component)]
+pub struct TargetSevenComp;
+pub fn add_component_7(
+    mut commands: Commands,
+    fish_query: Query<(&Enemy, Entity)>,
+    target_entity: Query<Entity, With<TargetSeven>>,
+) {
+    if let Ok(entity) = target_entity.get_single() {
+        for (fish, fish_entity) in fish_query.iter() {
+            if fish.target == entity {
+                commands.entity(fish_entity).insert(TargetSevenComp);
+            }
         }
     }
 }

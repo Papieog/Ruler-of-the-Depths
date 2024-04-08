@@ -15,15 +15,17 @@ use bevy::input::mouse::MouseMotion;
 use bevy::input::mouse::MouseWheel;
 use rand::Rng;
 
+
 pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(PreStartup, spawn_player)
+        app
+            .add_systems(PreStartup, spawn_player)
             .add_systems(Update, camera_movement)
             .add_systems(Update, player_controller)
             .add_systems(Update, rotate_player)
             .add_systems(Update, eat_enemy)
-            .add_systems(Update, scroll_camera)
+            //.add_systems(Update, scroll_camera) Did not work on web
             ;
     }
 }
@@ -64,7 +66,7 @@ pub fn spawn_player(mut commands: Commands, asset_server: Res<AssetServer>) {
         SceneBundle {
             scene: asset_server.load("Shark.glb#Scene0"),
             transform: Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, 0., 3.14, 0.))
-                .with_scale(Vec3::splat(0.9)),
+                .with_scale(Vec3::splat(0.7)),
             ..default()
         },
         PlayerModel,
@@ -118,47 +120,53 @@ pub fn camera_movement(
     for ev in mouse_motion.read() {
         let rotation_left_right =
             Quat::from_axis_angle(Vec3::Y, ev.delta.x * time.delta_seconds() * -0.1);
-        let player_transform = player_query.get_single().unwrap();
-        for mut camera_transform in &mut query2 {
-            camera_transform.rotate(rotation_left_right);
+        let player_transform: Transform;
+        if let Ok(transform) = player_query.get_single(){
+            player_transform = *transform;
         }
-        for mut camera_transform in &mut query {
-            if camera_transform.translation.y < -40. {
-                let rotation_up_down = Quat::from_axis_angle(
-                    Vec3::X,
-                    ev.delta.y.max(0.) * time.delta_seconds() * -0.1,
-                )
-                .inverse();
-                camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
-            } else if camera_transform.translation.y > 40. {
-                let rotation_up_down = Quat::from_axis_angle(
-                    Vec3::X,
-                    ev.delta.y.min(0.) * time.delta_seconds() * -0.1,
-                )
-                .inverse();
-                camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
-            } else if camera_transform.translation.y*player_transform.scale.x*camera_transform.scale.x + player_transform.translation.y < -97. {
-                let rotation_up_down = Quat::from_axis_angle(
-                    Vec3::X,
-                    ev.delta.y.max(1.) * time.delta_seconds() * -0.1,
-                )
-                .inverse();
-                camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
-            } else if camera_transform.translation.y*player_transform.scale.x*camera_transform.scale.x + player_transform.translation.y > 97.
-                && player_transform.translation.y < 100.
-            {
-                let rotation_up_down = Quat::from_axis_angle(
-                    Vec3::X,
-                    ev.delta.y.min(-1.) * time.delta_seconds() * -0.1,
-                )
-                .inverse();
-                camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
-            } else {
-                let rotation_up_down =
-                    Quat::from_axis_angle(Vec3::X, ev.delta.y * time.delta_seconds() * -0.1)
-                        .inverse();
-                camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
-                *camera_transform = camera_transform.looking_at(Vec3::new(0., 0.5, 0.), Vec3::Y);
+        else{
+            player_transform = Transform::from_xyz(0.,0.,0.)
+        }
+        for mut camera_transform_transform in &mut query2 {
+            camera_transform_transform.rotate(rotation_left_right);
+            for mut camera_transform in &mut query {
+                if camera_transform.translation.y < -40. {
+                    let rotation_up_down = Quat::from_axis_angle(
+                        Vec3::X,
+                        ev.delta.y.max(0.) * time.delta_seconds() * -0.1,
+                    )
+                    .inverse();
+                    camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
+                } else if camera_transform.translation.y > 40. {
+                    let rotation_up_down = Quat::from_axis_angle(
+                        Vec3::X,
+                        ev.delta.y.min(0.) * time.delta_seconds() * -0.1,
+                    )
+                    .inverse();
+                    camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
+                } else if camera_transform.translation.y*player_transform.scale.y*camera_transform_transform.scale.y + player_transform.translation.y < -97. {
+                    let rotation_up_down = Quat::from_axis_angle(
+                        Vec3::X,
+                        ev.delta.y.max(1.) * time.delta_seconds() * -0.1,
+                    )
+                    .inverse();
+                    camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
+                } else if camera_transform.translation.y*player_transform.scale.y*camera_transform_transform.scale.y + player_transform.translation.y > 97.
+                    && player_transform.translation.y < 100.
+                {
+                    let rotation_up_down = Quat::from_axis_angle(
+                        Vec3::X,
+                        ev.delta.y.min(-1.) * time.delta_seconds() * -0.1,
+                    )
+                    .inverse();
+                    camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
+                } else {
+                    let rotation_up_down =
+                        Quat::from_axis_angle(Vec3::X, ev.delta.y * time.delta_seconds() * -0.1)
+                            .inverse();
+                    camera_transform.rotate_around(Vec3::new(0., 0., 0.), rotation_up_down);
+                    *camera_transform = camera_transform.looking_at(Vec3::new(0., 0.5, 0.), Vec3::Y);
+                }
             }
         }
     }
@@ -222,12 +230,12 @@ pub fn rotate_player(
 pub fn scroll_camera(
     mut camera_transform_query: Query<&mut Transform, With<CameraTransform>>,
     mut scroll: EventReader<MouseWheel>,
+    time: Res<Time>
 ){
     for ev in scroll.read(){
-        println!("{:?}", ev.x);
         for mut transform in camera_transform_query.iter_mut(){
-            transform.scale += Vec3::splat(ev.x);
-            transform.scale = transform.scale.clamp_length(0.4, 5.0);
+            transform.scale += Vec3::splat(ev.y)*-time.delta_seconds()*2.0;
+            transform.scale = transform.scale.clamp_length(0.5, 5.0);
         }
     }
 }
@@ -238,6 +246,8 @@ pub fn scroll_camera(
 pub fn eat_enemy(
     mut player_query: Query<(&mut Physics, &mut Transform, &mut Player), Without<Enemy>>,
     mut enemy_query: Query<(&mut Enemy, &mut Transform), Without<Player>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
 ) {
     let mut rng = rand::thread_rng();
     if let Ok((mut physics, mut player_transform, mut player)) = player_query.get_single_mut() {
@@ -248,13 +258,33 @@ pub fn eat_enemy(
                 < 6.0 * player.size
                 && player.size > enemy.size
             {
-                enemy.size *= 1.1;
+                enemy.size = (enemy.size * 1.1).min(10.0);
+                enemy_transform.scale = Vec3::splat(enemy.size);
                 let x = rng.gen_range(-400.0..400.);
                 let y = rng.gen_range(-100.0..100.);
                 let z = rng.gen_range(-400.0..400.);
                 let position = Vec3::new(x, y, z);
                 enemy_transform.translation = position;
                 player.size += 0.03 * enemy.size / player.size;
+                let audio_files = vec![
+                    "audio/crunch.1.mp3",
+                    "audio/crunch.2.mp3",
+                    "audio/crunch.3.mp3",
+                    "audio/crunch.4.mp3",
+                    "audio/crunch.5.mp3",
+                    "audio/crunch.6.mp3",
+                ];
+                let random_index = rand::thread_rng().gen_range(0..audio_files.len());
+                let random_audio_path = audio_files[random_index];
+                commands.spawn(AudioBundle {
+                    source: asset_server.load(random_audio_path),
+                    settings: PlaybackSettings{
+                        mode: bevy::audio::PlaybackMode::Despawn,
+                        ..default()
+                    },
+                    ..default()
+                });
+
             }
             if player_transform
                 .translation
